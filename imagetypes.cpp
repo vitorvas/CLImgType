@@ -59,44 +59,54 @@ void printImageFormat(cl_image_format format)
 
 int main(int argc, char* argv[])
 {
-  cl_platform_id platform;
+  cl_platform_id platform[10];
   cl_device_id device;
   cl_context context;
   cl_command_queue queue;
   cl_kernel kernel;
   cl_int clerr;
-  
-  clGetPlatformIDs(1, &platform, NULL);
-  clerr = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
-  if(clerr == CL_DEVICE_NOT_FOUND)
-      clerr = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
-  
-  context = clCreateContext(NULL, 1, &device, NULL, NULL, &clerr);
 
-  cl_bool query;
-  clerr = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT, query, NULL, NULL);
+  uint nplat = 0;
+  clGetPlatformIDs(0, NULL, &nplat);
+  cout << nplat << endl;
 
-  char devname[255] = {'\0'};
-  clGetDeviceInfo(device, CL_DEVICE_NAME, 255, devname, NULL);
-  printf("Device name: %s\n", &devname);
+  // Just in case of an error
+  if (nplat == 0) nplat=1;
+  clGetPlatformIDs(nplat, platform, NULL);
 
+  for(int i=0; i<nplat; i++)
+  {
+    clerr = clGetDeviceIDs(platform[i], CL_DEVICE_TYPE_DEFAULT, 1, &device, NULL);
+    //    if(clerr == CL_DEVICE_NOT_FOUND)
+    //      clerr = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
+
+    context = clCreateContext(NULL, 1, &device, NULL, NULL, &clerr);
+
+    cl_bool query;
+    clerr = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT, query, NULL, NULL);
+
+    char devname[255] = {'\0'};
+    clGetDeviceInfo(device, CL_DEVICE_NAME, 255, devname, NULL);
+    printf("Device name: %s\n", &devname);
+
+    cl_uint nformats = 0;
+    clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D, 0, NULL, &nformats);
+    
+    // Ver os formatos de imagem suportados
+    cl_image_format formlist[nformats];
+    clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+				     nformats, formlist, NULL);
+    for(int i=0; i<nformats; i++)
+    {
+      printf("%d) ", i+1);
+      printImageFormat(formlist[i]);
+    }
+    
+  }
   //  cl_image_format format;
   //  format.image_channel_order = CL_A; // o Cochon só aceita CL_A, CL_RGBA, CL_ARGB, CL_BGRA
   //  format.image_channel_data_type = CL_UNSIGNED_INT8;
 
-  cl_uint nformats = 0;
-  clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D, 0, NULL, &nformats);
-    
-  // Ver os formatos de imagem suportados
-  cl_image_format formlist[nformats];
-  clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
-				     nformats, formlist, NULL);
-  for(int i=0; i<nformats; i++)
-  {
-    printf("%d) ", i+1);
-    printImageFormat(formlist[i]);
-  }
-  // Get image types availabe
   
   return 0;
 }
